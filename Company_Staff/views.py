@@ -32833,7 +32833,7 @@ def Salesbycustomer(request):
             cmp = StaffDetails.objects.get(login_details = log_details).company
             dash_details = StaffDetails.objects.get(login_details=log_details)
 
-        # rec = RecurringInvoice.objects.filter(company = cmp)
+        
         allmodules= ZohoModules.objects.get(company = cmp)
         reportData = []
         totInv = 0
@@ -44614,11 +44614,85 @@ def recurring_expense_email(request):
 
 
 def e_way_bill_report(request):
-    log_id = request.session['login_id']
-    log_details= LoginDetails.objects.get(id=log_id)
-    dash_details = CompanyDetails.objects.get(login_details=log_details)
-    context = {
-            'details': dash_details
-            
+    context = {}
+    if 'login_id' in request.session:
+        log_id = request.session['login_id']
+        log_details = LoginDetails.objects.get(id=log_id)
+        if log_details.user_type == 'Company':
+            cmp = CompanyDetails.objects.get(login_details=log_details)
+            dash_details = CompanyDetails.objects.get(login_details=log_details)
+        else:
+            cmp = StaffDetails.objects.get(login_details=log_details).company
+            dash_details = StaffDetails.objects.get(login_details=log_details)
+
+        bills = EwayBill.objects.filter(company=cmp)
+        allmodules = ZohoModules.objects.get(company=cmp)
+
+        context = {
+            'allmodules': allmodules,
+            'details': dash_details,
+            'log_details': log_details,
+            'cmp': cmp,
+            'bills': bills
         }
-    return render(request, 'zohomodules/e_way_bill_report.html',context)
+    else:
+        
+        return redirect('login')  
+
+    return render(request, 'zohomodules/e_way_bill_report.html', context)
+
+def e_waybillsCustomized(request):
+    if 'login_id' in request.session:
+        log_id = request.session['login_id']
+        log_details = LoginDetails.objects.get(id=log_id)
+        if log_details.user_type == 'Company':
+            comp_details = CompanyDetails.objects.get(login_details=log_details)
+        else:
+            comp_details = StaffDetails.objects.get(login_details=log_details).company
+
+        allmodules = ZohoModules.objects.get(company=comp_details, status='New')
+        data = Customer.objects.filter(company=comp_details)
+
+        if request.method == 'GET':
+            trans = request.GET.get('transactions', None)
+            startDate = request.GET.get('from_date', None)
+            endDate = request.GET.get('to_date', None)
+            if startDate == "":
+                startDate = None
+            if endDate == "":
+                endDate = None
+
+            bill = EwayBill.objects.filter(company=comp_details)
+
+            if startDate and endDate:
+                bill = bill.filter(start_date__range=[startDate, endDate])
+
+            if trans == 'saved':
+                bill = bill.filter(status='Save', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
+            elif trans == 'draft':
+                bill = bill.filter(status='Draft', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
+            elif trans == 'Converted_to_Invoice':
+                bill = bill.filter(convert_to_invoice__isnull=False)
+            elif trans == 'Converted_to_RecurringInvoice':
+                bill = bill.filter(convert_to_recurringinvoice__isnull=False)
+
+            totalCustomer = bill.values('customer').distinct().count()
+
+            context = {
+                'bill': bill,
+                'log_details': log_details,
+                'allmodules': allmodules,
+                'startDate': startDate,
+                'endDate': endDate,
+                'transaction': trans,
+                'totalCustomer': totalCustomer,
+                'companyName': comp_details.company_name,
+            }
+            return render(request, 'zohomodules/e_way_bill_customized.html', context)
+        else:
+            return redirect('/')
+    else:
+        return redirect('/')
+
+
+

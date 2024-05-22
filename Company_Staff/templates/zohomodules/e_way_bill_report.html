@@ -208,7 +208,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                 <button class="btn btn-warning" onclick="toggleContent()"><i class="fas fa-solid fa-gear"></i> Customize Report</button>
                                 <div id="contentDiv" class="content">
                                     <h6 style="color: white;">Customize Report</h6>
-                                    <form action="{% url 'salesByCustomerReportCustomized' %}" class="form reportCustomizeForm" method="get">
+                                    <form action="{% url 'e_waybillsCustomized' %}" class="form reportCustomizeForm" method="get">
                                         <div class="px-2">
                                             <label style="text-align:left ">From</label><br>
                                             <input name="from_date" class="inputdate form-control text-light" type="date" id="startDate" value="{{startDate}}" >
@@ -286,7 +286,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                                     
                                                     <div class="col-12">
                                                             <center class="h5 text-white"><b>{{cmp.company_name}}</b></center>
-                                                            <center class="h3 text-white"><b>SALES BY CUSTOMER</b></center>
+                                                            <center class="h3 text-white"><b>E-way bill report</b></center>
                                                             {% if startDate and endDate %}
                                                             <center class="h6 text-white">{{startDate}} TO {{endDate}}</center>
                                                             {% endif %}
@@ -307,32 +307,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    
+                                                                    {% for e in bills %}
                                                                     <tr>
-                                                                        <td class="text-center"></td>
-                                                                        <td class="text-center"></td>
-                                                                        <td class="text-center"></td>
-                                                                        <td class="text-center"></td>
+                                                                        <td class="text-center">{{e.start_date}}</td>
+                                                                        <td class="text-center">{{ e.eway_bill_number }}</td>
+                                                                        <td class="text-center">{{ e.customer.first_name }} {{ e.customer.last_name }}</td>
+                                                                        <td class="text-center">{{ e.grandtotal }}</td>
                                                                     </tr>
-                                                                    
+                                                                    {% endfor %}
                                                                 </tbody>
                                                             </table>
                                                         </section>
                                             
-                                                        <section class="balance-info text-dark">
-                                                            <div class="row p-4">
-                                                                <div class="col-10">
-                                                                    <div class="row mb-2">
-                                                                        <div class="col-4">Total Amount : <p style="font-size: 19px;"></p>
-                                                                        </div><br><br>
-                                                                    </div>
-                                                                    
-                                                                    
-                                                
-                                                                </div>
-                                                                
-                                                            </div>
-                                                        </section>
+                                                        
                                                     </div>
                                                         
                                                 </div>
@@ -382,6 +369,165 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           </div>
         </div>
       </div>
+      <script>
+        $(document).ready(function(){
+            var trans = `{{transaction}}`;
+            // alert(trans)
+            if(trans != "" && trans != 'all'){
+                $('#salesTransactions').val(trans)
+            }
+        })
+        function toggleContent() {
+            var contentDiv = document.getElementById("contentDiv");
+            if (contentDiv.style.display === "block") {
+                contentDiv.style.display = "none";
+            } else {
+                contentDiv.style.display = "block";
+                // Position the div just below the button
+                // var buttonRect = event.target.getBoundingClientRect();
+                // contentDiv.style.top = (buttonRect.bottom + window.scrollY) + "px";
+                // contentDiv.style.left = buttonRect.left + "px";
+            }
+        }
+    
+        $('#toggleEmailModal').on('click',function(){
+            var st = $('#startDate').val();
+            var end = $('#endDate').val();
+            var trns = $('#salesTransactions').val();
+    
+            $('#trans').val(trns)
+            $('#startDt').val(st)
+            $('#endDt').val(end)
+    
+            if((st != "" && end == "") || (st == "" && end != "")){
+            alert('Please select both date inputs or select none')
+            return
+            }
+    
+            $('#shareToEmail').modal('toggle');
+        });
+    
+        $(document).ready(function(){
+            $('#share_with_email').on('click',function(){
+                var emailsInput = document.getElementById('emailIds');
+                var emailsString = emailsInput.value.trim();
+    
+                var emails = emailsString.split(',').map(function(email) {
+                    return email.trim();
+                });
+    
+                var emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    
+                var invalidEmails = []
+                if(emailsString == ""){
+                    alert('Enter valid email addresses..')
+                }
+                else{
+                    for (var i = 0; i < emails.length; i++) {
+                        var currentEmail = emails[i];
+    
+                        if (currentEmail!="" && !emailRegex.test(currentEmail)) {
+                            console.log(currentEmail + ' is invalid!');
+                            invalidEmails.push(currentEmail)
+                        }
+                    }
+                    
+                    if(invalidEmails.length > 0){
+                        alert('Invalid emails..Please check!\n'+invalidEmails)
+                        // alert(invalidEmails)
+                    }else{
+                        $('#share_to_email_form').submit();
+                    }
+                }
+            })
+        });
+    
+        $(document).ready(function(){
+            var date1 = "";
+            $('#startDate').on('change',function(){
+                date1 = $(this).val()
+                $('#endDate').prop('min',date1)
+                $('#endDate').prop('required',true)
+    
+            })
+    
+            var date2 = "";
+            $('#endDate').on('change',function(){
+                date2 = $(this).val()
+                $('#startDate').prop('max',date2)
+                $('#startDate').prop('required',true)
+            })
+        })
+    
+        function reportPDF(){
+            var element = document.getElementById('printReport');
+            var opt =
+            {
+                margin: [0.5, 0.3, 0.3, 0.5],
+                filename: 'Report_SalesByCustomer',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'cm', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    
+        function printSection(sectionId) {
+            document.body.style.backgroundColor = 'white';
+            var printContents = document.getElementById(sectionId).innerHTML;
+            var originalContents = document.body.innerHTML;
+            var $printerDiv = $('<div class="printContainer"></div>');
+    
+            $printerDiv.html(printContents); 
+            $('body').append($printerDiv).addClass("printingContent"); 
+            window.print(); 
+            $printerDiv.remove();
+            $('body').removeClass("printingContent");
+        }
+    
+        function ExportToExcel(){
+            const Table = document.getElementById("reportTable");
+            const ws = XLSX.utils.table_to_sheet(Table);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, "Report_SalesByCustomer.xlsx");
+        }
+    
+        let sortOrder = false; // false for ascending, true for descending
+    
+        function sortName(colIndex) {
+        const table = document.getElementById('reportTable');
+        const rows = Array.from(table.rows).slice(1);
+        console.log(rows)
+        const isNumeric = !isNaN(parseFloat(rows[0].cells[colIndex].textContent));
+    
+        rows.sort((a, b) => {
+            let aValue = a.cells[colIndex].textContent;
+            let bValue = b.cells[colIndex].textContent;
+    
+            if (isNumeric) {
+            aValue = parseFloat(aValue);
+            bValue = parseFloat(bValue);
+            }
+    
+            if (sortOrder) {
+            return aValue < bValue ? 1 : -1;
+            } else {
+            return aValue > bValue ? 1 : -1;
+            }
+        });
+    
+        // Toggle arrow direction
+        const arrow = document.querySelector('.arrow');
+        arrow.classList.toggle('up', sortOrder);
+    
+        // Reorder the rows
+        rows.forEach(row => table.appendChild(row));
+    
+        // Toggle sort order for the next click
+        sortOrder = !sortOrder;
+        }
+    </script>
       
         
 </body>

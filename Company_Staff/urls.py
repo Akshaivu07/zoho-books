@@ -951,6 +951,8 @@ urlpatterns = [
     #-------------------E-Way bill report - Akshai V U------------------------------->
     path('e_way_bill_report',views.e_way_bill_report,name='e_way_bill_report'),
     path('e_waybillsCustomized',views.e_waybillsCustomized,name='e_waybillsCustomized'),
+    path('eway_bill_report_email',views.eway_bill_report_email,name='eway_bill_report_email'),
+    path('eway_bill_coustomize_email',views.eway_bill_coustomize_email,name='eway_bill_coustomize_email'),
 
     re_path(r'^static/(?P<path>.*)$', serve,{'document_root': settings.STATIC_ROOT}),
 ]

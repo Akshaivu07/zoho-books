@@ -300,7 +300,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                                                 </tbody>
                                                             </table>
                                                         </section>
-                                                        
+                                                        <br>
+                                                        <div class="col-12 d-flex justify-content-end my-2">
+                                                            <label for="totvalue" class="mr-2" style="font-weight: 600; color: black;">Total Amount:</label>
+                                                            <h4 id="totvalue">₹0.00</h4>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -314,6 +318,45 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           </div>
         </div>
     </div>
+    <div class="modal fade" id="shareToEmail">
+        <div class="modal-dialog">
+          <div class="modal-content" style="background-color: #3b3b3b;">
+            <div class="modal-header">
+              <h3 class="modal-title text-light" id="exampleModalLabel">Share E-way Bill Report</h3>
+              <button type="button" class="btn close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true" style="font-size: x-large;">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body mx-3" style="background-color: #000;">
+              <form action="{% url 'eway_bill_coustomize_email' %}" method="post" id="share_to_email_form" class="needs-validation" novalidate enctype="multipart/form-data">
+                {%csrf_token%}
+                <div class="form-group">
+                    <label for="emailIds">Email IDs</label>
+                    <textarea class="form-control" name="email_ids" id="emailIds" rows="3" placeholder="Multiple emails can be added by separating with a comma(,)." required></textarea>
+                </div>
+                <div class="form-group mt-2">
+                    <label for="item_unitname">Message(optional)</label>
+                    <textarea name="email_message" id="email_message" class="form-control" cols="" rows="4" placeholder="This message will be sent along with Bill details."></textarea>
+                </div>
+                <input type="text" name="transaction" id="trans" hidden>
+                <input type="date" name="start" id="startDt" hidden>
+                <input type="date" name="end" id="endDt" hidden>
+                <div class="row mt-3">
+                  <div class="col-md-4"></div>
+                  <div class="col-md-4">
+                    <div class="d-flex">
+                      <button class="btn save_btn btn-outline-warning mt-2 my-4 mx-2 w-50" type="button" id="share_with_email">Send</button> 
+                      <input class="btn save_btn btn-outline-warning mt-2 my-4 mx-2 w-50" data-dismiss="modal" type="reset" value="Close">
+                    </div>
+                  </div>
+                  <div class="col-md-4"></div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer"></div>
+          </div>
+        </div>
+      </div>
 
       <script>
         $(document).ready(function(){
@@ -352,6 +395,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     
             $('#shareToEmail').modal('toggle');
         });
+        document.addEventListener('DOMContentLoaded', function () {
+            calculateTotalAmount();
+        });
+
+        function calculateTotalAmount() {
+            let total = 0;
+            document.querySelectorAll('#reportTable tbody tr').forEach(row => {
+                let amountCell = row.cells[3]; 
+                let amount = parseFloat(amountCell.textContent.replace(/[^0-9.-]+/g, ""));
+                total += isNaN(amount) ? 0 : amount;
+            });
+
+            document.getElementById('totvalue').textContent = `₹${total.toFixed(2)}`;
+        }
+
     
         $(document).ready(function(){
             $('#share_with_email').on('click',function(){
@@ -410,7 +468,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             var opt =
             {
                 margin: [0.5, 0.3, 0.3, 0.5],
-                filename: 'Report_SalesByCustomer',
+                filename: 'Report_E-way bill',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
                 jsPDF: { unit: 'cm', format: 'letter', orientation: 'portrait' }
@@ -436,7 +494,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             const ws = XLSX.utils.table_to_sheet(Table);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-            XLSX.writeFile(wb, "Report_SalesByCustomer.xlsx");
+            XLSX.writeFile(wb, "Report_E-way bill.xlsx");
         }
     
         let sortOrder = false; // false for ascending, true for descending

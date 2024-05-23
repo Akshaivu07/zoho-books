@@ -303,6 +303,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                                                         <th class="text-center">Date</th>
                                                                         <th class="text-center">E-way Bill Number </th>
                                                                         <th class="text-center">Name</th>
+                                                                        <th class="text-center">Status</th>
                                                                         <th class="text-center">Amount</th>
                                                                     </tr>
                                                                 </thead>
@@ -312,12 +313,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                                                         <td class="text-center">{{e.start_date}}</td>
                                                                         <td class="text-center">{{ e.eway_bill_number }}</td>
                                                                         <td class="text-center">{{ e.customer.first_name }} {{ e.customer.last_name }}</td>
+                                                                        <td class="text-center">
+                                                                            {% if e.status == "Saved" %}
+                                                                                Sent
+                                                                            {% else %}
+                                                                                {{ e.status }}
+                                                                            {% endif %}
+                                                                        </td>
                                                                         <td class="text-center">{{ e.grandtotal }}</td>
                                                                     </tr>
                                                                     {% endfor %}
                                                                 </tbody>
                                                             </table>
                                                         </section>
+                                                        <br>
+                                                        <div class="col-12 d-flex justify-content-end my-2">
+                                                            <label for="totvalue" class="mr-2" style="font-weight: 600; color: black;">Total Amount:</label>
+                                                            <h4 id="totvalue">₹0.00</h4>
+                                                        </div>
                                             
                                                         
                                                     </div>
@@ -334,13 +347,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="modal-dialog">
           <div class="modal-content" style="background-color: #3b3b3b;">
             <div class="modal-header">
-              <h3 class="modal-title text-light" id="exampleModalLabel">Share Share By Customer</h3>
+              <h3 class="modal-title text-light" id="exampleModalLabel">Share E-way Bill Report</h3>
               <button type="button" class="btn close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true" style="font-size: x-large;">&times;</span>
               </button>
             </div>
             <div class="modal-body mx-3" style="background-color: #000;">
-              <form action="{% url 'shareSalesByCustomerReportToEmail' %}" method="post" id="share_to_email_form" class="needs-validation" novalidate enctype="multipart/form-data">
+              <form action="{% url 'eway_bill_report_email' %}" method="post" id="share_to_email_form" class="needs-validation" novalidate enctype="multipart/form-data">
                 {%csrf_token%}
                 <div class="form-group">
                     <label for="emailIds">Email IDs</label>
@@ -406,6 +419,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     
             $('#shareToEmail').modal('toggle');
         });
+        function calculateTotalAmount() {
+        let total = 0;
+        const table = document.getElementById('reportTable');
+        const rows = table.rows;
+
+        
+        for (let i = 1; i < rows.length; i++) {
+            const cellValue = rows[i].cells[4].textContent.trim(); 
+            const amount = parseFloat(cellValue.replace(/[^0-9.-]+/g,""));
+            if (!isNaN(amount)) {
+                total += amount;
+            }
+        }
+
+        document.getElementById('totvalue').innerText = `₹${total.toFixed(2)}`; 
+    }
+
+    
+    document.addEventListener('DOMContentLoaded', (event) => {
+        calculateTotalAmount();
+    });
     
         $(document).ready(function(){
             $('#share_with_email').on('click',function(){
@@ -464,7 +498,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             var opt =
             {
                 margin: [0.5, 0.3, 0.3, 0.5],
-                filename: 'Report_SalesByCustomer',
+                filename: 'Report_E-way bill',
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
                 jsPDF: { unit: 'cm', format: 'letter', orientation: 'portrait' }
@@ -490,7 +524,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             const ws = XLSX.utils.table_to_sheet(Table);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-            XLSX.writeFile(wb, "Report_SalesByCustomer.xlsx");
+            XLSX.writeFile(wb, "Report_E-way bill.xlsx");
         }
     
         let sortOrder = false; // false for ascending, true for descending

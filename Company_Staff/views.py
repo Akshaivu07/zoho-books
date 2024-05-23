@@ -44693,6 +44693,139 @@ def e_waybillsCustomized(request):
             return redirect('/')
     else:
         return redirect('/')
+    
+def eway_bill_report_email(request):
+    if 'login_id' in request.session:
+        log_id = request.session['login_id']
+        log_details = LoginDetails.objects.get(id=log_id)
+        if log_details.user_type == 'Company':
+            cmp = CompanyDetails.objects.get(login_details=log_details)
+            dash_details = CompanyDetails.objects.get(login_details=log_details)
+        else:
+            cmp = StaffDetails.objects.get(login_details=log_details).company
+            dash_details = StaffDetails.objects.get(login_details=log_details)
+
+        try:
+            if request.method == 'POST':
+                emails_string = request.POST['email_ids']
+                emails_list = [email.strip() for email in emails_string.split(',')]
+                email_message = request.POST['email_message']
+                startDate = request.POST['start']
+                endDate = request.POST['end']
+                if startDate == "":
+                    startDate = None
+                if endDate == "":
+                    endDate = None
+
+                bill = EwayBill.objects.filter(company=cmp)
+
+                context = {'cmp': cmp, 'startDate': startDate, 'endDate': endDate, 'bill': bill}
+                template_path = 'zohomodules/e_way_bill_Pdf.html'
+                template = get_template(template_path)
+
+                html = template.render(context)
+                result = BytesIO()
+                pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+                pdf = result.getvalue()
+                filename = 'E-way Bill Report'
+                subject = 'E-way Bill Report'
+                
+                email = EmailMsg(
+                    subject,
+                    f"Hi,\nPlease find the attached E-way bill report. \n{email_message}\n\n--\nRegards,\n{cmp.company_name}\n{cmp.address}\n{cmp.state} - {cmp.country}\n{cmp.contact}",
+                    from_email=settings.EMAIL_HOST_USER,
+                    to=emails_list
+                )
+                email.attach(filename, pdf, "application/pdf")
+                email.send(fail_silently=False)
+                print(bill)
+
+                messages.success(request, 'E-way bill report details have been shared via email successfully!')
+                return redirect(e_way_bill_report)
+        except Exception as e:
+            print(e)
+            messages.error(request, f'{e}')
+            return redirect(e_way_bill_report)
+
+def eway_bill_coustomize_email(request):
+    if 'login_id' in request.session:
+        log_id = request.session['login_id']
+        log_details = LoginDetails.objects.get(id=log_id)
+        if log_details.user_type == 'Company':
+            cmp = CompanyDetails.objects.get(login_details=log_details)
+            dash_details = CompanyDetails.objects.get(login_details=log_details)
+        else:
+            cmp = StaffDetails.objects.get(login_details=log_details).company
+            dash_details = StaffDetails.objects.get(login_details=log_details)
+
+        try:
+            if request.method == 'POST':
+                emails_string = request.POST['email_ids']
+                emails_list = [email.strip() for email in emails_string.split(',')]
+                email_message = request.POST['email_message']
+                trans = request.GET.get('transactions', None)
+                startDate = request.POST['start']
+                endDate = request.POST['end']
+                if startDate == "":
+                    startDate = None
+                if endDate == "":
+                    endDate = None
+
+                bill = EwayBill.objects.filter(company=cmp)
+
+                if startDate and endDate:
+                    bill = bill.filter(start_date__range=[startDate, endDate])
+
+                if trans == 'saved':
+                    bill = bill.filter(status='Save', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
+                elif trans == 'draft':
+                    bill = bill.filter(status='Draft', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
+                elif trans == 'Converted_to_Invoice':
+                    bill = bill.filter(convert_to_invoice__isnull=False)
+                elif trans == 'Converted_to_RecurringInvoice':
+                    bill = bill.filter(convert_to_recurringinvoice__isnull=False)
+
+                totalCustomer = bill.values('customer').distinct().count()
+
+                context = {
+                    'bill': bill,
+                    'log_details': log_details,
+                    
+                    'startDate': startDate,
+                    'endDate': endDate,
+                    'transaction': trans,
+                    'totalCustomer': totalCustomer,
+                    'companyName': cmp.company_name,
+                }
+                template_path = 'zohomodules/e_way_coustomize_Pdf.html'
+                template = get_template(template_path)
+
+                html = template.render(context)
+                result = BytesIO()
+                pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+                pdf = result.getvalue()
+                filename = 'E-way Bill Report'
+                subject = 'E-way Bill Report'
+                
+                email = EmailMsg(
+                    subject,
+                    f"Hi,\nPlease find the attached E-way bill report. \n{email_message}\n\n--\nRegards,\n{cmp.company_name}\n{cmp.address}\n{cmp.state} - {cmp.country}\n{cmp.contact}",
+                    from_email=settings.EMAIL_HOST_USER,
+                    to=emails_list
+                )
+                email.attach(filename, pdf, "application/pdf")
+                email.send(fail_silently=False)
+                
+
+                messages.success(request, 'E-way bill report details have been shared via email successfully!')
+                return redirect(e_waybillsCustomized)
+        except Exception as e:
+            print(e)
+            messages.error(request, f'{e}')
+            return redirect(e_waybillsCustomized)
+
+
+
 
 
 

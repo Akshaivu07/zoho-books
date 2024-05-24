@@ -211,20 +211,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                                     <form action="{% url 'e_waybillsCustomized' %}" class="form reportCustomizeForm" method="get">
                                         <div class="px-2">
                                             <label style="text-align:left ">From</label><br>
-                                            <input name="from_date" class="inputdate form-control text-light" type="date" id="startDate" value="{{startDate}}" >
-                                            
+                                            <input name="from_date" class="inputdate form-control text-light" type="date" id="startDate" value="{{startDate}}">
                                         </div> 
                                         <div class="px-2">
                                             <label style="text-align:left ">To</label><br>
                                             <input name="to_date" type="date" class="inputdate form-control text-light" id="endDate" value="{{endDate}}">
                                         </div>
                                         <div class="px-2">
-                                            <label style="text-align:left;color: white;">Sales Transaction</label><br>
+                                            <label style="text-align:left;color: white;">Status</label><br>
                                             <select name="transactions" id="salesTransactions" class="form-control text-light" style="background-color: #000;">
                                                 <option value="all">All</option>
-                                                <option value="invoice">Invoice</option>
-                                                <option value="recurring_invoice">Recurring Invoice</option>
-                                                <option value="credit_notes">Credit Notes</option>
+                                                <option value="sent">Sent</option>
+                                                <option value="draft">Draft</option>
                                             </select>
                                         </div>
                                         <div class="d-flex px-2 mt-3 mb-4">
@@ -567,3 +565,4 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </body>
 </html>
 {% endblock %}
+

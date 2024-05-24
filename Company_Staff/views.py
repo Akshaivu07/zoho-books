@@ -44645,6 +44645,7 @@ def e_waybillsCustomized(request):
     if 'login_id' in request.session:
         log_id = request.session['login_id']
         log_details = LoginDetails.objects.get(id=log_id)
+        
         if log_details.user_type == 'Company':
             comp_details = CompanyDetails.objects.get(login_details=log_details)
         else:
@@ -44657,24 +44658,25 @@ def e_waybillsCustomized(request):
             trans = request.GET.get('transactions', None)
             startDate = request.GET.get('from_date', None)
             endDate = request.GET.get('to_date', None)
-            if startDate == "":
-                startDate = None
-            if endDate == "":
-                endDate = None
+            
+            # Convert empty strings to None
+            startDate = startDate if startDate else None
+            endDate = endDate if endDate else None
 
             bill = EwayBill.objects.filter(company=comp_details)
 
             if startDate and endDate:
                 bill = bill.filter(start_date__range=[startDate, endDate])
 
-            if trans == 'saved':
-                bill = bill.filter(status='Save', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
+            # Filter based on the transaction type
+            if trans == 'sent':
+                bill = bill.filter(status='Saved')
             elif trans == 'draft':
-                bill = bill.filter(status='Draft', convert_to_invoice__isnull=True, convert_to_recurringinvoice__isnull=True)
-            elif trans == 'Converted_to_Invoice':
-                bill = bill.filter(convert_to_invoice__isnull=False)
-            elif trans == 'Converted_to_RecurringInvoice':
-                bill = bill.filter(convert_to_recurringinvoice__isnull=False)
+                bill = bill.filter(status='Draft')
+            elif trans == 'all':
+                pass  # Do not filter, get all e-way bills
+            elif trans:  # If trans is an invalid value
+                bill = EwayBill.objects.none()  # Empty queryset
 
             totalCustomer = bill.values('customer').distinct().count()
 
